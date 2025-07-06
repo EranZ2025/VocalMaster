@@ -1,66 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Practice – VocalMaster</title>
+  <script defer>
+    let mediaRecorder;
+    let audioChunks = [];
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const recordBtn = document.getElementById("recordBtn");
+      const stopBtn = document.getElementById("stopBtn");
+      const player = document.getElementById("player");
+      const status = document.getElementById("status");
+      const feedback = document.getElementById("feedback");
+
+      recordBtn.onclick = async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        mediaRecorder.ondataavailable = e => {
+          audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(audioChunks, { type: "audio/webm" });
+          player.src = URL.createObjectURL(blob);
+          status.textContent = "Processing...";
+
+          const formData = new FormData();
+          formData.append("file", blob, "recording.webm");
+
+          try {
+            const response = await fetch('/api/transcribe-feedback', {
+              method: "POST",
+              body: formData
+            });
+
+            const data = await response.json();
+            status.textContent = "";
+            feedback.innerHTML = `<strong>Transcript:</strong> ${data.transcript}<br><strong>Feedback:</strong> ${data.feedback}`;
+          } catch (err) {
+            status.textContent = "Error: Could not get feedback.";
+            console.error(err);
+          }
+        };
+
+        mediaRecorder.start();
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+        status.textContent = "Recording...";
+      };
+
+      stopBtn.onclick = () => {
+        mediaRecorder.stop();
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
+        status.textContent = "Processing...";
+      };
+    });
+  </script>
 </head>
 <body>
   <h1>Practice Area</h1>
   <p>Record your voice and receive feedback:</p>
+
   <button id="recordBtn">Start Recording</button>
   <button id="stopBtn" disabled>Stop Recording</button>
+
+  <br><br>
   <audio id="player" controls></audio>
+
   <p id="status"></p>
   <p id="feedback"></p>
-  <a href="index.html">&larr; Back to Home</a>
 
-  <script>
-    let mediaRecorder;
-    let audioChunks = [];
-
-    const recordBtn = document.getElementById("recordBtn");
-    const stopBtn = document.getElementById("stopBtn");
-    const player = document.getElementById("player");
-    const status = document.getElementById("status");
-    const feedback = document.getElementById("feedback");
-
-    recordBtn.onclick = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
-
-      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(audioChunks, { type: "audio/webm" });
-        player.src = URL.createObjectURL(blob);
-
-        // Show processing
-        status.textContent = "Processing...";
-
-        // Send to API
-        const formData = new FormData();
-        formData.append("file", blob, "recording.webm");
-
-       const response = await fetch('/api/transcribe-feedback'), {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await response.json();
-        status.textContent = "";
-        feedback.innerHTML = `<strong>Transcript:</strong> ${data.transcript}<br><strong>Feedback:</strong> ${data.feedback}`;
-      };
-
-      mediaRecorder.start();
-      recordBtn.disabled = true;
-      stopBtn.disabled = false;
-    };
-
-    stopBtn.onclick = () => {
-      mediaRecorder.stop();
-      recordBtn.disabled = false;
-      stopBtn.disabled = true;
-    };
-  </script>
+  <p><a href="index.html">&larr; Back to Home</a></p>
 </body>
 </html>
