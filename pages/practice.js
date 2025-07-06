@@ -1,61 +1,55 @@
-import { useEffect } from 'react';
+import { useState, useRef } from 'react';
 
 export default function Practice() {
-  useEffect(() => {
-    let mediaRecorder;
-    let audioChunks = [];
+  const [recording, setRecording] = useState(false);
+  const [audioURL, setAudioURL] = useState(null);
+  const [feedback, setFeedback] = useState('No feedback.');
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
-    const recordBtn = document.getElementById("recordBtn");
-    const stopBtn = document.getElementById("stopBtn");
-    const player = document.getElementById("player");
-    const status = document.getElementById("status");
-    const feedback = document.getElementById("feedback");
+  const startRecording = async () => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream);
+    mediaRecorderRef.current = mediaRecorder;
+    audioChunksRef.current = [];
 
-    if (recordBtn && stopBtn && player && status && feedback) {
-      recordBtn.onclick = async () => {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks = [];
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunksRef.current.push(event.data);
+      }
+    };
 
-        mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
-        mediaRecorder.onstop = async () => {
-          const blob = new Blob(audioChunks, { type: "audio/wav" });
-          player.src = URL.createObjectURL(blob);
-          status.textContent = "Processing...";
+    mediaRecorder.onstop = () => {
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      setAudioURL(audioUrl);
 
-          const response = await fetch("/api/transcribe-feedback", {
-            method: "POST",
-            body: blob,
-          });
+      // OPTIONAL: send the audioBlob to your API here
+      fetch('/api/transcribe-feedback')
+        .then(res => res.json())
+        .then(data => setFeedback(data.feedback))
+        .catch(() => setFeedback("Error fetching feedback."));
+    };
 
-          const result = await response.json();
-          feedback.textContent = result.text || "No feedback.";
-          status.textContent = "";
-        };
+    mediaRecorder.start();
+    setRecording(true);
+  };
 
-        mediaRecorder.start();
-        status.textContent = "Recording...";
-      };
-
-      stopBtn.onclick = () => {
-        if (mediaRecorder && mediaRecorder.state !== "inactive") {
-          mediaRecorder.stop();
-          status.textContent = "Stopped.";
-        }
-      };
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setRecording(false);
     }
-  }, []);
+  };
 
   return (
     <div>
       <h1>Practice Area</h1>
-      <button id="recordBtn">Record</button>
-      <button id="stopBtn">Stop</button>
-      <br />
-      <audio id="player" controls></audio>
-      <p id="status"></p>
-      <p><strong>Feedback:</strong> <span id="feedback"></span></p>
-      <p><a href="/">← Back to Home</a></p>
+      <button onClick={startRecording} disabled={recording}>Record</button>
+      <button onClick={stopRecording} disabled={!recording}>Stop</button>
+      {audioURL && <audio controls src={audioURL} />}
+      <p><strong>Feedback:</strong> {feedback}</p>
+      <a href="/">← Back to Home</a>
     </div>
   );
 }
