@@ -14,10 +14,11 @@
   <audio id="audioPlayer" controls></audio>
   <p id="status"></p>
   <pre id="feedback"></pre>
+  <pre id="error" style="color: red;"></pre>
 
   <a href="index.html">← Back to Home</a>
 
-  <!-- Load Recorder.js from CDN -->
+  <!-- Load stable Recorder.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/recorderjs/0.1.0/recorder.min.js"></script>
   <script>
     let recorder;
@@ -29,6 +30,54 @@
     const audioPlayer = document.getElementById('audioPlayer');
     const status = document.getElementById('status');
     const feedback = document.getElementById('feedback');
+    const errorDisplay = document.getElementById('error');
 
     recordBtn.onclick = async () => {
-      stre
+      try {
+        errorDisplay.innerText = '';
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const input = audioContext.createMediaStreamSource(stream);
+
+        recorder = new Recorder(input, { numChannels: 1 });
+        recorder.record();
+
+        status.innerText = 'Recording...';
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+      } catch (err) {
+        errorDisplay.innerText = 'Microphone error: ' + err.message;
+      }
+    };
+
+    stopBtn.onclick = () => {
+      try {
+        recorder.stop();
+        stream.getAudioTracks()[0].stop();
+
+        status.innerText = 'Processing...';
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
+
+        recorder.exportWAV(async blob => {
+          audioPlayer.src = URL.createObjectURL(blob);
+
+          const formData = new FormData();
+          formData.append('audio', blob, 'recording.wav');
+
+          const res = await fetch('/api/transcribe-feedback', {
+            method: 'POST',
+            body: formData
+          });
+
+          const data = await res.json();
+          feedback.innerText = data.feedback || 'No feedback received.';
+          status.innerText = 'Done.';
+        });
+      } catch (err) {
+        errorDisplay.innerText = 'Recording error: ' + err.message;
+      }
+    };
+  </script>
+</body>
+</html>
