@@ -17,57 +17,18 @@
 
   <a href="index.html">← Back to Home</a>
 
+  <!-- Load Recorder.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/recorder-js@1.0.3/src/recorder.js"></script>
   <script>
-    let mediaRecorder;
-    let audioChunks = [];
+    let recorder;
+    let audioContext;
+    let stream;
 
     const recordBtn = document.getElementById('recordBtn');
     const stopBtn = document.getElementById('stopBtn');
-    const status = document.getElementById('status');
     const audioPlayer = document.getElementById('audioPlayer');
+    const status = document.getElementById('status');
     const feedback = document.getElementById('feedback');
 
     recordBtn.onclick = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
-
-      mediaRecorder.ondataavailable = event => {
-        audioChunks.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(audioChunks, { type: 'audio/webm' });
-        const audioURL = URL.createObjectURL(blob);
-        audioPlayer.src = audioURL;
-
-        status.innerText = 'Sending to AI for feedback...';
-
-        const formData = new FormData();
-        formData.append('audio', blob, 'recording.webm');
-
-        const response = await fetch('/api/transcribe-feedback', {
-          method: 'POST',
-          body: formData
-        });
-
-        const result = await response.json();
-        feedback.innerText = result.feedback || 'No feedback received.';
-        status.innerText = 'Done.';
-      };
-
-      mediaRecorder.start();
-      status.innerText = 'Recording...';
-      recordBtn.disabled = true;
-      stopBtn.disabled = false;
-    };
-
-    stopBtn.onclick = () => {
-      mediaRecorder.stop();
-      status.innerText = 'Processing...';
-      recordBtn.disabled = false;
-      stopBtn.disabled = true;
-    };
-  </script>
-</body>
-</html>
+      stre
