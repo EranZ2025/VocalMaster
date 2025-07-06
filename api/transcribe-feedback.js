@@ -1,83 +1,72 @@
 export const config = {
-  runtime: 'edge',
+  api: {
+    bodyParser: false,
+  },
 };
 
-export default async function handler(req) {
+import { Readable } from 'stream';
+
+export default async function handler(req, res) {
   try {
-    if (req.method !== 'POST') {
-      return new Response('Method Not Allowed', { status: 405 });
+    const buffers = [];
+    for await (const chunk of req) {
+      buffers.push(chunk);
     }
+    const body = Buffer.concat(buffers);
 
-    const formData = await req.formData();
-    const blob = formData.get('audio');
-    const buffer = await blob.arrayBuffer();
-    const file = new File([buffer], 'recording.webm', { type: 'audio/webm' });
+    const boundary = req.headers['content-type'].split('boundary=')[1];
+    const parts = body.toString().split(`--${boundary}`);
 
-    // Whisper transcription
-    const whisperForm = new FormData();
-    whisperForm.append('file', file);
-    whisperForm.append('model', 'whisper-1');
+    const audioPart = parts.find(part => part.includes('filename="recording.wav"'));
+    const start = audioPart.indexOf('\r\n\r\n') + 4;
+    const audioBuffer = Buffer.from(audioPart.slice(start, audioPart.lastIndexOf('--')).trim(), 'binary');
 
-    const whisperRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
+    // 1. Transcribe using Whisper API
+    const transcriptionResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
-      body: whisperForm,
+      body: (() => {
+        const data = new FormData();
+        const blob = new Blob([audioBuffer], { type: 'audio/wav' });
+        data.append("file", blob, "recording.wav");
+        data.append("model", "whisper-1");
+        return data;
+      })()
     });
 
-    const whisperData = await whisperRes.json();
-    if (!whisperRes.ok) {
-      console.error('Whisper error:', whisperData);
-      return new Response(JSON.stringify({ feedback: 'Whisper failed.', error: whisperData }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    const transcriptionData = await transcriptionResponse.json();
+    const transcript = transcriptionData.text;
 
-    const transcript = whisperData.text;
-
-    // GPT feedback
-    const gptRes = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    // 2. Ask GPT-4 for feedback
+    const gptResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: "gpt-4",
         messages: [
           {
-            role: 'system',
-            content: 'You are a vocal coach specializing in opera technique. Provide short, practical vocal feedback on tone, vowels, breath, or posture based on what the student sang.',
+            role: "system",
+            content: "You are a vocal coach specializing in opera technique. Listen to a student's singing and give constructive, supportive feedback on things like vowel placement, breath, support, or mouth position."
           },
           {
-            role: 'user',
-            content: `I sang: ${transcript}`,
-          },
-        ],
-      }),
+            role: "user",
+            content: `Here is what I sang: ${transcript}`
+          }
+        ]
+      })
     });
 
-    const gptData = await gptRes.json();
-    if (!gptRes.ok) {
-      console.error('GPT error:', gptData);
-      return new Response(JSON.stringify({ feedback: 'GPT failed.', error: gptData }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    const gptData = await gptResponse.json();
+    const feedback = gptData.choices?.[0]?.message?.content || "No feedback generated.";
 
-    const feedback = gptData.choices?.[0]?.message?.content;
-
-    return new Response(JSON.stringify({ transcript, feedback }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (error) {
-    console.error('Unexpected error:', error);
-    return new Response(JSON.stringify({ feedback: 'Unexpected error', error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    res.status(200).json({ transcript, feedback });
+  } catch (err) {
+    console.error("Transcription Error:", err);
+    res.status(500).json({ error: "Whisper transcription failed" });
   }
 }
