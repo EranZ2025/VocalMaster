@@ -3,7 +3,7 @@ export default function Home() {
     <div>
       <h1>Welcome to VocalMaster</h1>
       <p>This is your opera voice training app.</p>
-      <p><a href="/learn">Go to Learn</a></p>
+      <p><a href="/learn">Learn</a></p>
       <p><a href="/practice">Go to Practice</a></p>
     </div>
   );
