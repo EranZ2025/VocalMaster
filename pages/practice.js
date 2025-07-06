@@ -18,38 +18,36 @@ export default function Practice() {
         audioChunks = [];
 
         mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+
         mediaRecorder.onstop = async () => {
           const blob = new Blob(audioChunks, { type: "audio/wav" });
           player.src = URL.createObjectURL(blob);
-
           status.textContent = "Processing...";
 
           const response = await fetch("/api/transcribe-feedback", {
             method: "POST",
             body: blob,
           });
+
           const result = await response.json();
-          status.textContent = "Done";
           feedback.textContent = result.feedback;
+          status.textContent = "Done!";
         };
 
         mediaRecorder.start();
-        status.textContent = "Recording...";
       };
 
       stopBtn.onclick = () => {
         mediaRecorder.stop();
-        status.textContent = "Stopped";
       };
     }
   }, []);
 
   return (
     <div>
-      <h1>Practice Area</h1>
-      <p>Record your voice and receive feedback:</p>
-      <button id="recordBtn">Start Recording</button>
-      <button id="stopBtn" disabled>Stop Recording</button>
+      <h1>Practice & Track</h1>
+      <button id="recordBtn">Record</button>
+      <button id="stopBtn">Stop</button>
       <br />
       <audio id="player" controls></audio>
       <p id="status"></p>
