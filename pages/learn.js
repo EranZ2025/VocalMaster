@@ -7,7 +7,7 @@ export default function Learn() {
         <li>IPA pronunciation guides</li>
         <li>Vocal styles and examples</li>
       </ul>
-      <a href="/">Back to Home</a>
+      <a href="/">← Back to Home</a>
     </div>
   );
 }
