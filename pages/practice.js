@@ -18,7 +18,6 @@ export default function Practice() {
         audioChunks = [];
 
         mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
-
         mediaRecorder.onstop = async () => {
           const blob = new Blob(audioChunks, { type: "audio/wav" });
           player.src = URL.createObjectURL(blob);
@@ -30,29 +29,33 @@ export default function Practice() {
           });
 
           const result = await response.json();
-          feedback.textContent = result.feedback;
-          status.textContent = "Done!";
+          feedback.textContent = result.text || "No feedback.";
+          status.textContent = "";
         };
 
         mediaRecorder.start();
+        status.textContent = "Recording...";
       };
 
       stopBtn.onclick = () => {
-        mediaRecorder.stop();
+        if (mediaRecorder && mediaRecorder.state !== "inactive") {
+          mediaRecorder.stop();
+          status.textContent = "Stopped.";
+        }
       };
     }
   }, []);
 
   return (
     <div>
-      <h1>Practice & Track</h1>
+      <h1>Practice Area</h1>
       <button id="recordBtn">Record</button>
       <button id="stopBtn">Stop</button>
       <br />
       <audio id="player" controls></audio>
       <p id="status"></p>
-      <p id="feedback"></p>
-      <a href="/">← Back to Home</a>
+      <p><strong>Feedback:</strong> <span id="feedback"></span></p>
+      <p><a href="/">← Back to Home</a></p>
     </div>
   );
 }
