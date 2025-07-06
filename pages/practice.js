@@ -27,28 +27,28 @@ export default function Practice() {
           mediaRecorder = new MediaRecorder(stream);
           audioChunks = [];
 
-          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+          mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
           mediaRecorder.onstop = async () => {
-            const blob = new Blob(audioChunks, { type: "audio/webm" });
-            player.src = URL.createObjectURL(blob);
-            status.textContent = "Processing...";
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            player.src = audioUrl;
+            status.textContent = "Analyzing...";
 
             const formData = new FormData();
-            formData.append("file", blob, "recording.webm");
+            formData.append("audio", audioBlob, "recording.wav");
 
             try {
-              const response = await fetch("/api/transcribe-feedback", {
+              const res = await fetch("/api/transcribe-feedback", {
                 method: "POST",
-                body: formData,
+                body: formData
               });
 
-              const data = await response.json();
-              status.textContent = "";
-              feedback.innerHTML = "<strong>Transcript:</strong> " + data.transcript + "<br><strong>Feedback:</strong> " + data.feedback;
+              const data = await res.json();
+              feedback.textContent = "Feedback: " + data.feedback;
+              status.textContent = "Done.";
             } catch (err) {
-              status.textContent = "";
               feedback.textContent = "Error: Could not get feedback.";
-              console.error(err);
+              status.textContent = "";
             }
           };
 
