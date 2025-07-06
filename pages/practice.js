@@ -8,41 +8,43 @@ export default function Practice() {
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
 
+  const isIOS = () => {
+    if (typeof window === 'undefined') return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  };
+
   const startRecording = async () => {
     setFeedback('');
     setAudioURL('');
     setRecording(true);
-    
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    let options = { mimeType: 'audio/mp4' };
 
-    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-      options = { mimeType: 'audio/webm' };
-    }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    const mimeType = isIOS() ? 'audio/mp4' : 'audio/webm';
+    const options = { mimeType };
 
     const mediaRecorder = new MediaRecorder(stream, options);
     audioChunksRef.current = [];
 
-    mediaRecorder.ondataavailable = event => {
+    mediaRecorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
         audioChunksRef.current.push(event.data);
       }
     };
 
     mediaRecorder.onstop = async () => {
-      const blob = new Blob(audioChunksRef.current, { type: mediaRecorder.mimeType });
+      const blob = new Blob(audioChunksRef.current, { type: mimeType });
       const url = URL.createObjectURL(blob);
       setAudioURL(url);
 
       const formData = new FormData();
-      formData.append('audio', blob, 'recording.mp4');
+      formData.append('audio', blob, `recording.${mimeType.split('/')[1]}`);
 
       try {
         const res = await fetch('/api/transcribe-feedback', {
           method: 'POST',
-          body: formData
+          body: formData,
         });
-
         const data = await res.json();
         setFeedback(data.feedback);
       } catch (err) {
@@ -57,22 +59,17 @@ export default function Practice() {
 
   const stopRecording = () => {
     setRecording(false);
-    mediaRecorderRef.current?.stop();
+    mediaRecorderRef.current.stop();
   };
 
   return (
-    <div style={{ padding: '1rem' }}>
+    <div>
       <h1>Practice Area</h1>
       <button onClick={startRecording} disabled={recording}>Record</button>
       <button onClick={stopRecording} disabled={!recording}>Stop</button>
-      <div style={{ margin: '1rem 0' }}>
-        {audioURL && <audio controls src={audioURL} />}
-      </div>
-      <div>
-        <strong>Feedback:</strong> {feedback || 'No feedback.'}
-      </div>
-      <br />
-      <Link href="/">← Back to Home</Link>
+      {audioURL && <audio controls src={audioURL} />}
+      <p><strong>Feedback:</strong> {feedback || 'No feedback.'}</p>
+      <p><Link href="/">← Back to Home</Link></p>
     </div>
   );
 }
