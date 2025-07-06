@@ -2,81 +2,64 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Practice - VocalMaster</title>
+  <title>Practice – VocalMaster</title>
 </head>
 <body>
   <h1>Practice Area</h1>
   <p>Record your voice and receive feedback:</p>
-
   <button id="recordBtn">Start Recording</button>
   <button id="stopBtn" disabled>Stop Recording</button>
-  <audio id="audioPlayer" controls></audio>
+  <audio id="player" controls></audio>
   <p id="status"></p>
-  <pre id="feedback"></pre>
-  <pre id="error" style="color: red;"></pre>
+  <p id="feedback"></p>
+  <a href="index.html">&larr; Back to Home</a>
 
-  <a href="/pages/index.html">← Back to Home</a>
-
-  <!-- Load stable Recorder.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/recorderjs/0.1.0/recorder.min.js"></script>
   <script>
-    let recorder;
-    let audioContext;
-    let stream;
+    let mediaRecorder;
+    let audioChunks = [];
 
-    const recordBtn = document.getElementById('recordBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const audioPlayer = document.getElementById('audioPlayer');
-    const status = document.getElementById('status');
-    const feedback = document.getElementById('feedback');
-    const errorDisplay = document.getElementById('error');
+    const recordBtn = document.getElementById("recordBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const player = document.getElementById("player");
+    const status = document.getElementById("status");
+    const feedback = document.getElementById("feedback");
 
     recordBtn.onclick = async () => {
-      try {
-        errorDisplay.innerText = '';
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const input = audioContext.createMediaStreamSource(stream);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
 
-        recorder = new Recorder(input, { numChannels: 1 });
-        recorder.record();
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(audioChunks, { type: "audio/webm" });
+        player.src = URL.createObjectURL(blob);
 
-        status.innerText = 'Recording...';
-        recordBtn.disabled = true;
-        stopBtn.disabled = false;
-      } catch (err) {
-        errorDisplay.innerText = 'Microphone error: ' + err.message;
-      }
+        // Show processing
+        status.textContent = "Processing...";
+
+        // Send to API
+        const formData = new FormData();
+        formData.append("file", blob, "recording.webm");
+
+        const response = await fetch("/api/transcribe-feedback", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+        status.textContent = "";
+        feedback.innerHTML = `<strong>Transcript:</strong> ${data.transcript}<br><strong>Feedback:</strong> ${data.feedback}`;
+      };
+
+      mediaRecorder.start();
+      recordBtn.disabled = true;
+      stopBtn.disabled = false;
     };
 
     stopBtn.onclick = () => {
-      try {
-        recorder.stop();
-        stream.getAudioTracks()[0].stop();
-
-        status.innerText = 'Processing...';
-        recordBtn.disabled = false;
-        stopBtn.disabled = true;
-
-        recorder.exportWAV(async blob => {
-          audioPlayer.src = URL.createObjectURL(blob);
-
-          const formData = new FormData();
-          formData.append('audio', blob, 'recording.wav');
-
-          const res = await fetch('/api/transcribe-feedback', {
-            method: 'POST',
-            body: formData
-          });
-
-          const data = await res.json();
-          feedback.innerText = data.feedback || 'No feedback received.';
-          status.innerText = 'Done.';
-        });
-      } catch (err) {
-        errorDisplay.innerText = 'Recording error: ' + err.message;
-      }
+      mediaRecorder.stop();
+      recordBtn.disabled = false;
+      stopBtn.disabled = true;
     };
   </script>
 </body>
