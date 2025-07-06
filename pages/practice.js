@@ -28,33 +28,35 @@ export default function Practice() {
           audioChunks = [];
 
           mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+
           mediaRecorder.onstop = async () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-            const audioUrl = URL.createObjectURL(audioBlob);
-            player.src = audioUrl;
-            status.textContent = "Analyzing...";
+            const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+            player.src = URL.createObjectURL(audioBlob);
+
+            status.innerText = "Processing...";
 
             const formData = new FormData();
             formData.append("audio", audioBlob, "recording.wav");
 
             try {
-              const res = await fetch("/api/transcribe-feedback", {
+              const response = await fetch("/api/transcribe-feedback", {
                 method: "POST",
                 body: formData
               });
 
-              const data = await res.json();
-              feedback.textContent = "Feedback: " + data.feedback;
-              status.textContent = "Done.";
-            } catch (err) {
-              feedback.textContent = "Error: Could not get feedback.";
-              status.textContent = "";
+              const data = await response.json();
+              status.innerText = "Done!";
+              feedback.innerText = "Transcript: " + data.transcript + "\\nFeedback: " + data.feedback;
+            } catch (error) {
+              console.error("Error:", error);
+              status.innerText = "Error: Could not get feedback.";
             }
           };
 
           mediaRecorder.start();
           recordBtn.disabled = true;
           stopBtn.disabled = false;
+          status.innerText = "Recording...";
         };
 
         stopBtn.onclick = () => {
