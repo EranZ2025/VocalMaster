@@ -5,14 +5,12 @@ export default function LearnIndex() {
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
       <h1>🎓 Learn – Choose a Topic</h1>
       <ul>
-        <li><a href="/learn/anatomy">🫁 Vocal Anatomy</a></li>
-        <li><a href="/learn/style">🎶 Vocal Styles</a></li>
-        <li><a href="/learn/masters">🎤 Great Singers</a></li>
+        <li><Link href="/learn/anatomy">🫁 Vocal Anatomy</Link></li>
+        <li><Link href="/learn/ipa">🔤 IPA</Link></li>
+        <li><Link href="/learn/styles">🎶 Vocal Styles</Link></li>
+        <li><Link href="/learn/masters">🎤 Great Singers</Link></li>
       </ul>
-
-      <p style={{ marginTop: '30px' }}>
-        <Link href="/">← Back to Home</Link>
-      </p>
+      <p style={{ marginTop: '30px' }}><Link href="/">← Back to Home</Link></p>
     </div>
   );
 }
