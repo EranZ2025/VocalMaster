@@ -1,57 +1,94 @@
-// pages/progress.js
-
+import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
 
-export default function Progress() {
-  const [journalEntries, setJournalEntries] = useState([]);
-  const [feedbacks, setFeedbacks] = useState([]);
+export default function Practice() {
+  const [recording, setRecording] = useState(false);
+  const [audioURL, setAudioURL] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
-  useEffect(() => {
-    // Load saved journal entries from localStorage
-    const savedJournal = JSON.parse(localStorage.getItem('vocal_journal')) || [];
-    const savedFeedback = JSON.parse(localStorage.getItem('vocal_feedbacks')) || [];
-    setJournalEntries(savedJournal);
-    setFeedbacks(savedFeedback);
-  }, []);
+  const isIOS = () => {
+    if (typeof window === 'undefined') return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  };
+
+  const startRecording = async () => {
+    setFeedback('');
+    setAudioURL('');
+    setRecording(true);
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    const mimeType = isIOS() ? 'audio/mp4' : 'audio/webm';
+    const options = { mimeType };
+
+    const mediaRecorder = new MediaRecorder(stream, options);
+    audioChunksRef.current = [];
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunksRef.current.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(audioChunksRef.current, { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      setAudioURL(url);
+
+      const formData = new FormData();
+      formData.append('audio', blob, `recording.${mimeType.split('/')[1]}`);
+
+      try {
+        const res = await fetch('/api/transcribe-feedback', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        setFeedback(data.feedback);
+
+        // ✅ Save feedback in localStorage
+        const existing = JSON.parse(localStorage.getItem('vocal_feedbacks') || '[]');
+        existing.push({ date: new Date().toLocaleString(), feedback: data.feedback });
+        localStorage.setItem('vocal_feedbacks', JSON.stringify(existing));
+
+      } catch (err) {
+        setFeedback('Error getting feedback.');
+        console.error(err);
+      }
+    };
+
+    mediaRecorder.start();
+    mediaRecorderRef.current = mediaRecorder;
+  };
+
+  const stopRecording = () => {
+    setRecording(false);
+    mediaRecorderRef.current.stop();
+  };
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
-      <h1>📊 Progress</h1>
+      <h1>🎙️ Practice Area</h1>
+      <p>Click <strong>Record</strong>, sing or speak, then click <strong>Stop</strong> to get feedback.</p>
 
-      <section>
-        <h2>📝 Practice Journal</h2>
-        {journalEntries.length === 0 ? (
-          <p>No journal entries yet.</p>
-        ) : (
-          <ul>
-            {journalEntries.map((entry, index) => (
-              <li key={index}>
-                <strong>{entry.date}</strong>: {entry.text}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <button onClick={startRecording} disabled={recording}>🎤 Record</button>{' '}
+      <button onClick={stopRecording} disabled={!recording}>⏹ Stop</button>
 
-      <section style={{ marginTop: '30px' }}>
-        <h2>🎧 Feedback History</h2>
-        {feedbacks.length === 0 ? (
-          <p>No feedback history yet.</p>
-        ) : (
-          <ul>
-            {feedbacks.map((item, index) => (
-              <li key={index}>
-                <strong>{item.date}</strong>: {item.feedback}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {audioURL && (
+        <div>
+          <h3>▶️ Playback</h3>
+          <audio controls src={audioURL} />
+        </div>
+      )}
 
-      <p style={{ marginTop: '30px' }}>
-        <Link href="/">← Back to Home</Link>
-      </p>
+      <div style={{ marginTop: '20px' }}>
+        <h3>🧠 Feedback</h3>
+        <p>{feedback || 'No feedback yet.'}</p>
+      </div>
+
+      <p style={{ marginTop: '30px' }}><Link href="/">← Back to Home</Link></p>
     </div>
   );
 }
