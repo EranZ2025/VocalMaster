@@ -1,33 +1,30 @@
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export default function Progress() {
-  const [feedbackHistory, setFeedbackHistory] = useState([]);
+  const [recordings, setRecordings] = useState([]);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('vocal_feedbacks') || '[]');
-    setFeedbackHistory(stored);
+    const data = JSON.parse(localStorage.getItem('vocalProgress') || '[]');
+    setRecordings(data);
   }, []);
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial' }}>
+    <div style={{ padding: 20 }}>
       <h1>📈 Your Vocal Progress</h1>
       <p>All your past practice feedbacks appear below:</p>
 
-      {feedbackHistory.length === 0 ? (
+      {recordings.length === 0 ? (
         <p>No practice feedback recorded yet.</p>
       ) : (
-        <ul>
-          {feedbackHistory.map((entry, index) => (
-            <li key={index} style={{ marginBottom: '10px' }}>
-              <strong>{entry.date}:</strong><br />
-              {entry.feedback}
-            </li>
-          ))}
-        </ul>
+        recordings.map((item, index) => (
+          <div key={index} style={{ marginBottom: 20 }}>
+            <audio controls src={item.url} />
+            <p><strong>Feedback:</strong> {item.feedback}</p>
+          </div>
+        ))
       )}
 
-      <p style={{ marginTop: '30px' }}><Link href="/">← Back to Home</Link></p>
+      <p><a href="/">← Back to Home</a></p>
     </div>
   );
 }
