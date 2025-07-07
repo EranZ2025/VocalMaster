@@ -1,28 +1,20 @@
-import React from 'react';
 import Link from 'next/link';
 
 export default function Breathing() {
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
-      <h1>🌬️ Breathing Practice</h1>
-      <p>
-        Proper breath support is the foundation of good singing. These exercises will help you engage your diaphragm and control airflow.
-      </p>
+      <h1>🌬️ Breathing Exercises</h1>
+      <p>Train diaphragmatic breathing and breath control for singing.</p>
 
-      <ul>
-        <li>Silent deep breaths – 4 counts in, 6 out</li>
-        <li>Lip trills or “motorboats” while exhaling</li>
-        <li>Sss-s-s-s hissing on one breath as long as possible</li>
-        <li>Panting like a dog, then slowing to deep breath</li>
+      <ul style={{ lineHeight: '2em' }}>
+        <li><strong>🫁 Diaphragm Awareness:</strong> Place hands on lower ribs and feel the expansion.</li>
+        <li><strong>📏 4-4-8 Breathing:</strong> Inhale for 4, hold for 4, exhale for 8 (slow and steady).</li>
+        <li><strong>🪈 Straw Phonation:</strong> Hum through a straw to regulate airflow.</li>
+        <li><strong>🎈 Balloon Expansion:</strong> Imagine inflating a balloon into your lower back and sides.</li>
+        <li><strong>🎼 Breath-Release Practice:</strong> Silent inhale, controlled sigh-out with relaxed shoulders.</li>
       </ul>
 
-      <p>
-        Always aim for low, relaxed breathing without raising your shoulders.
-      </p>
-
-      <p style={{ marginTop: '30px' }}>
-        <Link href="/exercises">← Back to Exercises</Link>
-      </p>
+      <p><Link href="/exercises">← Back to Exercises</Link></p>
     </div>
   );
 }
