@@ -1,43 +1,40 @@
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import React, { useState } from 'react';
 
-export default function Profile() {
+export default function ProfilePage() {
   const [goal, setGoal] = useState('');
   const [savedGoal, setSavedGoal] = useState('');
 
-  useEffect(() => {
-    const storedGoal = localStorage.getItem('userGoal');
-    if (storedGoal) {
-      setGoal(storedGoal);
-      setSavedGoal(storedGoal);
-    }
-  }, []);
-
   const handleSave = () => {
-    localStorage.setItem('userGoal', goal);
+    localStorage.setItem('vocalGoal', goal);
     setSavedGoal(goal);
   };
 
-  const handleReset = () => {
-    if (confirm('Are you sure you want to delete all practice data?')) {
-      localStorage.removeItem('vocalPracticeHistory');
-      alert('Practice data deleted.');
+  const handleLoad = () => {
+    const storedGoal = localStorage.getItem('vocalGoal');
+    if (storedGoal) {
+      setSavedGoal(storedGoal);
     }
   };
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <h1>👤 Profile</h1>
-      <p><strong>Name:</strong> VocalMaster User</p>
+    <div>
+      <h1>👤 Your Profile</h1>
+      <p>Set your vocal development goal and track it here:</p>
+      
+      <input
+        type="text"
+        value={goal}
+        onChange={(e) => setGoal(e.target.value)}
+      />
+      <br />
+      <button onClick={handleSave}>Save Goal</button>
+      <button onClick={handleLoad}>Load Goal</button>
 
-      <div style={{ marginTop: '1.5rem' }}>
-        <label><strong>Your Vocal Goal / Note to Self:</strong></label>
-        <br />
-        <textarea
-          rows="4"
-          style={{ width: '100%', maxWidth: '400px', marginTop: '0.5rem' }}
-          value={goal}
-          onChange={(e) => setGoal(e.target.value)}
-        />
-        <br />
-        <button onClick={handleSa
+      {savedGoal && (
+        <p><strong>🎯 Your Goal:</strong> {savedGoal}</p>
+      )}
+
+      <p><a href="/">← Back to Home</a></p>
+    </div>
+  );
+}
