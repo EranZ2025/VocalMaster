@@ -1,13 +1,12 @@
 export default function Home() {
   return (
-    <div>
-      <h1>Welcome to VocalMaster</h1>
-      <p>This is your opera voice training app.</p>
+    <div style={{ padding: '20px', fontFamily: 'Arial' }}>
+      <h1>🎙️ Welcome to VocalMaster</h1>
+      <p>This app helps you learn opera singing and track your vocal progress.</p>
+
       <ul>
-        <li><a href="/learn/anatomy">🎓 Learn Anatomy</a></li>
-        <li><a href="/learn/style">🎶 Vocal Styles</a></li>
-        <li><a href="/learn/masters">🎤 Great Singers</a></li>
-        <li><a href="/practice">🎙️ Practice & Feedback</a></li>
+        <li><a href="/learn">🎓 Go to Learn Section</a></li>
+        <li><a href="/practice">🎤 Go to Practice Section</a></li>
       </ul>
     </div>
   );
