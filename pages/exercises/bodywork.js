@@ -4,20 +4,21 @@ import Link from 'next/link';
 export default function Bodywork() {
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
-      <h1>🧘 Bodywork & Core</h1>
+      <h1>🧘‍♂️ Bodywork & Core</h1>
       <p>
-        These exercises help you connect your breath, posture, and body alignment. A relaxed and supported body is key for healthy singing.
+        Body alignment and awareness are foundational for vocal freedom. These exercises help release tension and engage your support system.
       </p>
 
       <ul>
-        <li>Stretch shoulders, neck, and jaw</li>
-        <li>Slow head rolls and shoulder rolls</li>
-        <li>Rag-doll forward bend with soft sighs</li>
-        <li>Pelvic tilts and balance on one foot</li>
+        <li>Neck and shoulder rolls</li>
+        <li>Spine alignment check (against a wall)</li>
+        <li>Gentle forward bends and stretches</li>
+        <li>Pelvic tilt and grounding awareness</li>
+        <li>Plank hold (start with 15–30 seconds)</li>
       </ul>
 
       <p>
-        Feel free to adapt these before singing sessions. You can also record your favorite warmups in the Record tab!
+        Keep breathing naturally during each movement. The goal is to find release, not strain.
       </p>
 
       <p style={{ marginTop: '30px' }}>
