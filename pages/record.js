@@ -1,55 +1,81 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 
 export default function Record() {
-  const [mediaRecorder, setMediaRecorder] = useState(null);
-  const [chunks, setChunks] = useState([]);
-  const [audioURL, setAudioURL] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [audioURL, setAudioURL] = useState('');
   const [feedback, setFeedback] = useState('');
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
-  const handleStart = async () => {
+  const startRecording = async () => {
+    setFeedback('');
+    setAudioURL('');
+    setRecording(true);
+
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const recorder = new MediaRecorder(stream);
+    const mimeType = /iPhone|iPad|iPod/.test(navigator.userAgent) ? 'audio/mp4' : 'audio/webm';
+    const options = { mimeType };
 
-    recorder.ondataavailable = (e) => {
-      setChunks((prev) => [...prev, e.data]);
+    const mediaRecorder = new MediaRecorder(stream, options);
+    audioChunksRef.current = [];
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunksRef.current.push(event.data);
+      }
     };
 
-    recorder.onstop = () => {
-      const blob = new Blob(chunks, { type: 'audio/webm' });
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(audioChunksRef.current, { type: mimeType });
       const url = URL.createObjectURL(blob);
       setAudioURL(url);
 
-      // Simulate feedback
-      const fakeFeedback = 'Your pitch is mostly accurate, but try to relax your jaw for smoother vowels.';
-      setFeedback(fakeFeedback);
+      const formData = new FormData();
+      formData.append('audio', blob, `recording.${mimeType.split('/')[1]}`);
 
-      // Save to localStorage
-      const saved = JSON.parse(localStorage.getItem('vocalProgress') || '[]');
-      saved.push({ url, feedback: fakeFeedback });
-      localStorage.setItem('vocalProgress', JSON.stringify(saved));
+      try {
+        const res = await fetch('/api/transcribe-feedback', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        setFeedback(data.feedback);
+
+        // Save to localStorage
+        const entry = {
+          url,
+          feedback: data.feedback,
+          timestamp: Date.now(),
+        };
+
+        const existing = JSON.parse(localStorage.getItem('vocalProgress') || '[]');
+        existing.unshift(entry);
+        localStorage.setItem('vocalProgress', JSON.stringify(existing));
+      } catch (err) {
+        setFeedback('Error getting feedback.');
+        console.error(err);
+      }
     };
 
-    setChunks([]);
-    setMediaRecorder(recorder);
-    recorder.start();
+    mediaRecorder.start();
+    mediaRecorderRef.current = mediaRecorder;
   };
 
-  const handleStop = () => {
-    mediaRecorder.stop();
+  const stopRecording = () => {
+    setRecording(false);
+    mediaRecorderRef.current.stop();
   };
 
   return (
-    <div style={{ padding: 20 }}>
+    <div>
       <h1>🎙️ Record Your Practice</h1>
       <p>Use this section to record your exercises or singing practice and get feedback.</p>
-
-      <button onClick={handleStart}>Record</button>
-      <button onClick={handleStop} disabled={!mediaRecorder}>Stop</button>
-
-      {audioURL && <audio controls src={audioURL} style={{ display: 'block', marginTop: 10 }} />}
-
+      <button onClick={startRecording} disabled={recording}>Record</button>
+      <button onClick={stopRecording} disabled={!recording}>Stop</button>
+      {audioURL && <audio controls src={audioURL} />}
       <p><strong>Feedback:</strong> {feedback || 'No feedback yet.'}</p>
-      <p><a href="/">← Back to Home</a></p>
+      <p><Link href="/">← Back to Home</Link></p>
     </div>
   );
 }
