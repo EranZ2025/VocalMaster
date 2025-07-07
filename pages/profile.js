@@ -1,40 +1,50 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import Link from 'next/link';
 
-export default function ProfilePage() {
+export default function Profile() {
   const [goal, setGoal] = useState('');
   const [savedGoal, setSavedGoal] = useState('');
 
   const handleSave = () => {
-    localStorage.setItem('vocalGoal', goal);
     setSavedGoal(goal);
+    localStorage.setItem('vocalGoal', goal);
   };
 
-  const handleLoad = () => {
-    const storedGoal = localStorage.getItem('vocalGoal');
-    if (storedGoal) {
-      setSavedGoal(storedGoal);
-    }
-  };
+  // Load saved goal on page load
+  if (typeof window !== 'undefined' && savedGoal === '' && localStorage.getItem('vocalGoal')) {
+    setSavedGoal(localStorage.getItem('vocalGoal'));
+  }
 
   return (
-    <div>
-      <h1>👤 Your Profile</h1>
-      <p>Set your vocal development goal and track it here:</p>
-      
-      <input
-        type="text"
-        value={goal}
-        onChange={(e) => setGoal(e.target.value)}
-      />
+    <div style={{ padding: '20px', fontFamily: 'Arial' }}>
+      <h1>👤 Your Vocal Profile</h1>
+      <p>Set your vocal development goal and track your focus:</p>
+
+      <label>
+        🎯 Your current goal:
+        <br />
+        <input
+          type="text"
+          placeholder="e.g., Improve breath support"
+          value={goal}
+          onChange={(e) => setGoal(e.target.value)}
+          style={{ marginTop: '8px', width: '300px', padding: '5px' }}
+        />
+      </label>
       <br />
-      <button onClick={handleSave}>Save Goal</button>
-      <button onClick={handleLoad}>Load Goal</button>
+      <button onClick={handleSave} style={{ marginTop: '10px' }}>
+        Save Goal
+      </button>
 
       {savedGoal && (
-        <p><strong>🎯 Your Goal:</strong> {savedGoal}</p>
+        <p style={{ marginTop: '20px' }}>
+          ✅ <strong>Saved Goal:</strong> {savedGoal}
+        </p>
       )}
 
-      <p><a href="/">← Back to Home</a></p>
+      <p style={{ marginTop: '30px' }}>
+        <Link href="/">← Back to Home</Link>
+      </p>
     </div>
   );
 }
