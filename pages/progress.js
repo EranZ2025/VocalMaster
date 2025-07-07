@@ -1,29 +1,32 @@
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function Progress() {
-  const [entries, setEntries] = useState([]);
-
-  useEffect(() => {
-    const data = JSON.parse(localStorage.getItem('vocalProgress') || '[]');
-    setEntries(data);
-  }, []);
+  // This is placeholder content — eventually you'll pull real entries from a database
+  const mockEntries = [
+    {
+      date: '2025-07-07',
+      summary: 'Practiced breathing and recorded “Vocalise”',
+      feedback: 'Good breath control. Work on smoother phrase endings.',
+    },
+    {
+      date: '2025-07-06',
+      summary: 'Tried gentle bodywork and humming exercises',
+      feedback: 'Nice resonance. Try to maintain relaxed posture while sustaining pitches.',
+    },
+  ];
 
   return (
-    <div>
-      <h1>📈 Your Vocal Progress</h1>
-      <p>All your past practice feedbacks appear below:</p>
+    <div style={{ padding: '20px', fontFamily: 'Arial' }}>
+      <h1>📈 Progress</h1>
+      <p>Review your recent practice logs and AI feedback:</p>
 
-      {entries.length === 0 ? (
-        <p>No practice feedback recorded yet.</p>
-      ) : (
-        entries.map((entry, index) => (
-          <div key={index} style={{ marginBottom: '1rem' }}>
-            <audio controls src={entry.url} />
-            <p><strong>Feedback:</strong> {entry.feedback}</p>
-          </div>
-        ))
-      )}
+      {mockEntries.map((entry, index) => (
+        <div key={index} style={{ marginBottom: '20px', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+          <h3>{entry.date}</h3>
+          <p><strong>📝 Summary:</strong> {entry.summary}</p>
+          <p><strong>💬 Feedback:</strong> {entry.feedback}</p>
+        </div>
+      ))}
 
       <p><Link href="/">← Back to Home</Link></p>
     </div>
